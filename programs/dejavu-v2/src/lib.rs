@@ -1,11 +1,16 @@
 mod oracles;
 mod organizations;
+mod shared;
 
 use anchor_lang::prelude::*;
 
 use crate::organizations::accounts::*;
 use crate::organizations::handlers::*;
 use crate::organizations::instructions::*;
+
+use crate::oracles::accounts::*;
+use crate::oracles::handlers::*;
+use crate::oracles::instructions::*;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
@@ -35,6 +40,22 @@ pub mod dejavu_v2 {
         withdraw_from_organization_handler(ctx, instruction)
     }
     /* Organization Instructions */
+
+    /* Oracles Instructions */
+    pub fn create_oracle(
+        ctx: Context<CreateOracleAccounts>,
+        instruction: CreateOracleInstruction,
+    ) -> Result<()> {
+        create_oracle_handler(ctx, instruction)
+    }
+
+    pub fn join_oracle(
+        ctx: Context<JoinOracleAccounts>,
+        instruction: JoinOracleInstruction,
+    ) -> Result<()> {
+        join_oracle_handler(ctx, instruction)
+    }
+    /* Oracles Instructions */
 }
 
 #[derive(Accounts)]

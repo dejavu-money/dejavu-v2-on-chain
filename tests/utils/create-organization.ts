@@ -36,7 +36,12 @@ export default async (
   );
 
   const [vaultAccount] = await anchor.web3.PublicKey.findProgramAddress(
-    [organization.toBuffer(), Buffer.from('vault')],
+    [organization.toBuffer(), Buffer.from("vault")],
+    program.programId
+  );
+
+  const [oracleBets] = await anchor.web3.PublicKey.findProgramAddress(
+    [organization.toBuffer(), Buffer.from("vault")],
     program.programId
   );
 
