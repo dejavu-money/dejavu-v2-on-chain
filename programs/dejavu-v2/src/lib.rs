@@ -55,6 +55,14 @@ pub mod dejavu_v2 {
     ) -> Result<()> {
         join_oracle_handler(ctx, instruction)
     }
+
+    pub fn withdraw_from_oracle(
+        ctx: Context<WithdrawFromOracleAccounts>,
+        instruction: WithdrawFromOracleInstruction
+    ) -> Result<()> {
+
+        withdraw_from_oracle_handler(ctx, instruction)
+    }
     /* Oracles Instructions */
 }
 

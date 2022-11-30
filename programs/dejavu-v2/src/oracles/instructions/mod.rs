@@ -42,3 +42,9 @@ impl JoinOracleInstruction {
         }
     }
 }
+
+
+#[derive(AnchorSerialize, AnchorDeserialize)]
+pub struct WithdrawFromOracleInstruction {
+    
+}

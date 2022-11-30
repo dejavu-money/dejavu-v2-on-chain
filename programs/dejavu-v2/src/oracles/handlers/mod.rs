@@ -5,12 +5,13 @@ use anchor_spl::token::{self, Transfer};
 
 use anchor_lang::prelude::*;
 
-use super::instructions::{CreateOracleInstruction, JoinOracleInstruction};
+use super::instructions::{CreateOracleInstruction, JoinOracleInstruction, WithdrawFromOracleInstruction};
 
 pub fn create_oracle_handler(
     ctx: Context<CreateOracleAccounts>,
     instruction: CreateOracleInstruction,
 ) -> Result<()> {
+    ctx.accounts.oracle.authority = ctx.accounts.user.key();
     ctx.accounts.oracle.organization = ctx.accounts.organization.key();
     ctx.accounts.oracle.id = instruction.id;
     ctx.accounts.oracle.game.status_id = 0;
@@ -55,6 +56,36 @@ pub fn join_oracle_handler(
 
     let ctx_transfer = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
     token::transfer(ctx_transfer, ctx.accounts.oracle.init_amount)?;
+
+    Ok(())
+}
+
+
+pub fn withdraw_from_oracle_handler(
+    ctx: Context<WithdrawFromOracleAccounts>,
+    instruction: WithdrawFromOracleInstruction
+) -> Result<()> {
+
+    let bet_item = match ctx.accounts.oracle_bets.bets.get(ctx.accounts.player_bet.index as usize) {
+        Some(bet) => Ok(bet),
+        None => err!(Errors::UnautorizedWithdraw),
+    }?;
+    let mut count_winners: u8 = 0;
+
+    for bet in &ctx.accounts.oracle_bets.bets {
+        if bet.game_result() == bet_item.game_result() {
+            count_winners = count_winners + 1;
+        }
+    }
+
+    let count_no_winners = (ctx.accounts.oracle_bets.bets.len() as u8 - count_winners) as u64;
+    let vault_total_amount = (ctx.accounts.oracle.init_amount * count_no_winners)
+            .checked_div(count_winners as u64)
+            .ok_or(Errors::UnautorizedWithdraw)?;
+
+    let award = ctx.accounts.oracle.init_amount + vault_total_amount;
+
+    msg!("{}", award);
 
     Ok(())
 }

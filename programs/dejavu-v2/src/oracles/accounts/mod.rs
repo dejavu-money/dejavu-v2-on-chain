@@ -7,12 +7,6 @@ use anchor_spl::token::Mint;
 use anchor_spl::token::Token;
 use anchor_spl::token::TokenAccount;
 
-// pub struct WithdrawParams<'a> {
-//     player_bet: &'a PlayerBet,
-//     user: &'a Pubkey,
-//     bets: &'a Vec<BetItem>
-// }
-
 #[derive(PartialEq)]
 pub enum GameStatus {
     InProgress = 0,
@@ -84,6 +78,7 @@ impl BetItem {
 
 #[account]
 pub struct Oracle {
+    pub authority: Pubkey,
     pub organization: Pubkey,   // 32
     pub game: Game,             // 14
     pub start_at_utc_unix: i64, // 8
@@ -132,11 +127,7 @@ impl Oracle {
             .checked_div(count_winners as u64)
             .ok_or(Errors::UnautorizedWithdraw)?;
 
-
         let award = self.init_amount + vault_total_amount;
-
-
-        
 
         Ok(())
     }
@@ -173,7 +164,7 @@ pub struct CreateOracleAccounts<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32 + 14 + 8 + 8 + 8,
+        space = 8 + 32 + 32 + 14 + 8 + 8 + 8,
         seeds = [
             "oracle".as_bytes().as_ref(), 
             organization.key().as_ref(),
@@ -230,8 +221,8 @@ pub struct JoinOracleAccounts<'info> {
     pub oracle: Account<'info, Oracle>,
     #[account(
         init,
-        payer = user,
         space = 8 + 1 + 32 + 32,
+        payer = payer,
         seeds = [
             oracle.key().as_ref(),
             format!("player-{}", instruction.bet_index).as_bytes().as_ref()
@@ -257,7 +248,46 @@ pub struct JoinOracleAccounts<'info> {
     pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>,
     #[account(
-        constraint = organization.mint.key() == mint.key()
+        constraint = organization.mint.key() == mint.key(),
+        constraint = organization.key() == oracle.organization.key()
+    )]
+    pub mint: Account<'info, Mint>,
+    #[account(
+        mut,
+        seeds = [oracle.key().as_ref(), b"vault".as_ref()],
+        bump
+      )]
+    pub vault: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub user_token_account: Account<'info, TokenAccount>,
+}
+
+#[derive(Accounts)]
+#[instruction(instruction: JoinOracleInstruction)]
+pub struct WithdrawFromOracleAccounts<'info> {
+    pub oracle: Account<'info, Oracle>,
+    #[account(
+        constraint = player_bet.oracle.key() == oracle.key(),
+        constraint = player_bet.user.key() == user.key()
+      )]
+    pub player_bet: Account<'info, PlayerBet>,
+    #[account(
+        seeds = [oracle.key().as_ref(), b"bets"], 
+        bump
+    )]
+    pub oracle_bets: Account<'info, Bets>,
+    #[account(
+        constraint = organization.key() == oracle.organization.key(),
+    )]
+    pub organization: Account<'info, Organization>,
+    #[account(mut)]
+    pub user: Signer<'info>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub rent: Sysvar<'info, Rent>,
+    #[account(
+        constraint = organization.mint.key() == mint.key(),
+        constraint = organization.key() == oracle.organization.key()
     )]
     pub mint: Account<'info, Mint>,
     #[account(
