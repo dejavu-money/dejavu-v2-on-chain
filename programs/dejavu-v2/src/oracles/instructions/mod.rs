@@ -43,8 +43,12 @@ impl JoinOracleInstruction {
     }
 }
 
+// #[derive(AnchorSerialize, AnchorDeserialize)]
+// pub struct WithdrawFromOracleInstruction {}
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
-pub struct WithdrawFromOracleInstruction {
-    
+pub struct UpdateOracleInstruction {
+    pub status_id: u8,
+    pub team_a_score: u8,
+    pub team_b_score: u8,
 }

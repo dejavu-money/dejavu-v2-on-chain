@@ -11,12 +11,12 @@ import { Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
 enum GameResult {
   TeamAWin = 0,
   TeamBWin = 1,
-  DRAW = 2
+  DRAW = 2,
 }
 
 interface OracleBets {
-  globalBetsIndex: number,
-  gameResult: number,
+  globalBetsIndex: number;
+  gameResult: number;
 }
 
 describe("Oracles methods", () => {
@@ -127,8 +127,149 @@ describe("Oracles methods", () => {
   //   });
   // });
 
-  describe("#join-oracle", async () => {
-    it("joins ..", async () => {
+  // describe("#join-oracle", async () => {
+  //   it("joins ..", async () => {
+  //     const organizationId = new Date().getTime();
+  //     const oracleId = new Date().getTime();
+  //     const startAtUtcUnix = new Date().getTime();
+
+  //     const token = await CreateToken({
+  //       connection: provider.connection,
+  //       token: {
+  //         amount: 1,
+  //       },
+  //       accounts: {
+  //         payer: provider.wallet.publicKey,
+  //         payerSign: payer,
+  //       },
+  //     });
+
+  //     const {
+  //       accounts: { organization },
+  //     } = await CreateOrganization(program, {
+  //       connection: provider.connection,
+  //       accounts: {
+  //         payerSign: payer,
+  //         user: provider.wallet.publicKey,
+  //         mint: token.accounts.mint,
+  //       },
+  //       organization: {
+  //         id: organizationId,
+  //         fee: 10,
+  //       },
+  //     });
+
+  //     const [oracle] = await anchor.web3.PublicKey.findProgramAddress(
+  //       [
+  //         Buffer.from("oracle"),
+  //         organization.toBuffer(),
+  //         Buffer.from(`${oracleId}`),
+  //       ],
+  //       program.programId
+  //     );
+
+  //     const [playerBet] = await anchor.web3.PublicKey.findProgramAddress(
+  //       [
+  //         oracle.toBuffer(),
+  //         Buffer.from('player-0'),
+  //       ],
+  //       program.programId
+  //     );
+
+  //     const [oracleVault] = await anchor.web3.PublicKey.findProgramAddress(
+  //       [oracle.toBuffer(), Buffer.from("vault")],
+  //       program.programId
+  //     );
+
+  //     const [oracleBets] = await anchor.web3.PublicKey.findProgramAddress(
+  //       [oracle.toBuffer(), Buffer.from("bets")],
+  //       program.programId
+  //     );
+
+  //     // await program.methods.updateOracle({
+  //     //   statusId: 1,
+  //     //   teamAScore: 1,
+  //     //   teamBScore: 1
+  //     // }).accounts({
+  //     //   organization: organization,
+  //     //   user: provider.publicKey,
+  //     //   oracle: oracle
+  //     // }).rpc();
+
+  //     await program.methods
+  //       .createOracle({
+  //         id: new BN(oracleId),
+  //         initAmount: new BN(1),
+  //         teamIdA: 4,
+  //         teamIdB: 5,
+  //         contextReference: 10,
+  //         contextReferenceId: new BN(432),
+  //         startAtUtcUnix: new BN(startAtUtcUnix),
+  //       })
+  //       .accounts({
+  //         oracle: oracle,
+  //         organization: organization,
+  //         user: provider.wallet.publicKey,
+  //         mint: token.accounts.mint,
+  //         vault: oracleVault,
+  //         oracleBets: oracleBets
+  //       })
+  //       .rpc();
+
+  //       await program.methods.joinOracle({
+  //         betIndex: 0,
+  //         gameResult: 0,
+  //       }).accounts(
+  //         {
+  //           oracle: oracle,
+  //           oracleBets: oracleBets,
+  //           organization: organization,
+  //           payer: provider.wallet.publicKey,
+  //           user: provider.wallet.publicKey,
+  //           mint: token.accounts.mint,
+  //           vault: oracleVault,
+  //           playerBet: playerBet,
+  //           userTokenAccount: token.accounts.payerMintAccount
+  //         }
+  //       ).rpc();
+
+  //       const betsData = await program.account.bets.fetch(oracleBets);
+  //       const playerBetData = await program.account.playerBet.fetch(playerBet);
+  //       const bets = betsData.bets as OracleBets[];
+
+  //       assert.equal(
+  //         bets[0].globalBetsIndex,
+  //         0,
+  //         'verify bet index'
+  //       );
+
+  //       assert.equal(
+  //         bets[0].gameResult,
+  //         0,
+  //         'verify bet game result'
+  //       );
+
+  //       assert.equal(
+  //         playerBetData.index,
+  //         0,
+  //         'verify player bet index'
+  //       );
+
+  //       assert.ok(
+  //         playerBetData.oracle.equals(oracle),
+  //         'verify player bet oracle'
+  //       );
+
+  //       assert.ok(
+  //         playerBetData.user.equals(provider.wallet.publicKey),
+  //         'verify player bet created_by'
+  //       );
+
+  //   });
+  // });
+
+  describe("#withdraw-from-oracle", async () => {
+    it("withdraws ..", async () => {
       const organizationId = new Date().getTime();
       const oracleId = new Date().getTime();
       const startAtUtcUnix = new Date().getTime();
@@ -136,7 +277,7 @@ describe("Oracles methods", () => {
       const token = await CreateToken({
         connection: provider.connection,
         token: {
-          amount: 1,
+          amount: 300,
         },
         accounts: {
           payer: provider.wallet.publicKey,
@@ -169,10 +310,17 @@ describe("Oracles methods", () => {
       );
 
       const [playerBet] = await anchor.web3.PublicKey.findProgramAddress(
-        [
-          oracle.toBuffer(),
-          Buffer.from('player-0'),
-        ],
+        [oracle.toBuffer(), Buffer.from("player-0")],
+        program.programId
+      );
+
+      const [playerBet2] = await anchor.web3.PublicKey.findProgramAddress(
+        [oracle.toBuffer(), Buffer.from("player-1")],
+        program.programId
+      );
+
+      const [playerBet3] = await anchor.web3.PublicKey.findProgramAddress(
+        [oracle.toBuffer(), Buffer.from("player-2")],
         program.programId
       );
 
@@ -189,7 +337,7 @@ describe("Oracles methods", () => {
       await program.methods
         .createOracle({
           id: new BN(oracleId),
-          initAmount: new BN(1),
+          initAmount: new BN(100),
           teamIdA: 4,
           teamIdB: 5,
           contextReference: 10,
@@ -202,59 +350,108 @@ describe("Oracles methods", () => {
           user: provider.wallet.publicKey,
           mint: token.accounts.mint,
           vault: oracleVault,
-          oracleBets: oracleBets
+          oracleBets: oracleBets,
         })
         .rpc();
 
-        await program.methods.joinOracle({
+      await program.methods
+        .joinOracle({
           betIndex: 0,
-          gameResult: 0,
-        }).accounts(
-          {
-            oracle: oracle,
-            oracleBets: oracleBets,
-            organization: organization,
-            payer: provider.wallet.publicKey,
-            user: provider.wallet.publicKey,
-            mint: token.accounts.mint,
-            vault: oracleVault,
-            playerBet: playerBet,
-            userTokenAccount: token.accounts.payerMintAccount
-          }
-        ).rpc();
+          gameResult: GameResult.TeamAWin,
+        })
+        .accounts({
+          oracle: oracle,
+          oracleBets: oracleBets,
+          organization: organization,
+          payer: provider.wallet.publicKey,
+          user: provider.wallet.publicKey,
+          mint: token.accounts.mint,
+          vault: oracleVault,
+          playerBet: playerBet,
+          userTokenAccount: token.accounts.payerMintAccount,
+        })
+        .rpc();
 
-        const betsData = await program.account.bets.fetch(oracleBets);
-        const playerBetData = await program.account.playerBet.fetch(playerBet);
-        const bets = betsData.bets as OracleBets[];
+      await program.methods
+        .joinOracle({
+          betIndex: 1,
+          gameResult: GameResult.TeamBWin,
+        })
+        .accounts({
+          oracle: oracle,
+          oracleBets: oracleBets,
+          organization: organization,
+          payer: provider.wallet.publicKey,
+          user: provider.wallet.publicKey,
+          mint: token.accounts.mint,
+          vault: oracleVault,
+          playerBet: playerBet2,
+          userTokenAccount: token.accounts.payerMintAccount,
+        })
+        .rpc();
 
-        assert.equal(
-          bets[0].globalBetsIndex,
-          0,
-          'verify bet index'
-        );
+      await program.methods
+        .joinOracle({
+          betIndex: 2,
+          gameResult: GameResult.DRAW,
+        })
+        .accounts({
+          oracle: oracle,
+          oracleBets: oracleBets,
+          organization: organization,
+          payer: provider.wallet.publicKey,
+          user: provider.wallet.publicKey,
+          mint: token.accounts.mint,
+          vault: oracleVault,
+          playerBet: playerBet3,
+          userTokenAccount: token.accounts.payerMintAccount,
+        })
+        .rpc();
 
-        assert.equal(
-          bets[0].gameResult,
-          0,
-          'verify bet game result'
-        );
+      await program.methods
+        .updateOracle({
+          statusId: 1,
+          teamAScore: 1,
+          teamBScore: 0,
+        })
+        .accounts({
+          organization: organization,
+          user: provider.publicKey,
+          oracle: oracle,
+        })
+        .rpc();
 
-        assert.equal(
-          playerBetData.index,
-          0,
-          'verify player bet index'
-        );
+      await program.methods
+        .withdrawFromOracle()
+        .accounts({
+          oracle: oracle,
+          oracleBets: oracleBets,
+          playerBet: playerBet,
+          organization: organization,
+          mint: token.accounts.mint,
+          userTokenAccount: token.accounts.payerMintAccount,
+          vault: oracleVault,
+        })
+        .rpc();
 
-        assert.ok(
-          playerBetData.oracle.equals(oracle),
-          'verify player bet oracle'
-        );
+      const winnerBalance = await provider.connection.getTokenAccountBalance(
+        token.accounts.payerMintAccount
+      );
+      const vaultBalance = await provider.connection.getTokenAccountBalance(
+        oracleVault
+      );
 
-        assert.ok(
-          playerBetData.user.equals(provider.wallet.publicKey),
-          'verify player bet created_by'
-        );
+      assert.equal(
+        Number(winnerBalance.value.amount),
+        300,
+        "verify user token account balance"
+      );
 
+      assert.equal(
+        Number(vaultBalance.value.amount),
+        0,
+        "verify vault token account balance"
+      );
     });
   });
 });

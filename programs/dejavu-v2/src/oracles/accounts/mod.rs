@@ -14,6 +14,27 @@ pub enum GameStatus {
     Invalid = 2,
     Unknown,
 }
+
+impl GameStatus {
+    pub fn from_status_id(id: u8) -> Result<Self> {
+        match id {
+            0 => Ok(Self::InProgress),
+            1 => Ok(Self::Finished),
+            2 => Ok(Self::Invalid),
+            _ => err!(Errors::OracleInvalidGameStatus),
+        }
+    }
+
+    pub fn get_status_id(&self) -> Result<u8> {
+        match self {
+            Self::InProgress => Ok(0),
+            Self::Finished => Ok(1),
+            Self::Invalid => Ok(2),
+            _ => err!(Errors::OracleInvalidGameStatus),
+        }
+    }
+}
+
 #[derive(PartialEq)]
 pub enum GameResult {
     TeamAWin,
@@ -34,26 +55,23 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn status(&self) -> GameStatus {
-        match self.status_id {
-            0 => GameStatus::InProgress,
-            1 => GameStatus::Finished,
-            2 => GameStatus::Invalid,
-            _ => GameStatus::Unknown,
-        }
+    pub fn game_status(&self) -> Result<GameStatus> {
+        GameStatus::from_status_id(self.status_id)
     }
 
-    pub fn game_result(&self) -> GameResult {
-        if self.status() != GameStatus::Finished {
-            return GameResult::NoResult;
+    pub fn game_result(&self) -> Result<GameResult> {
+        let game_status = self.game_status()?;
+
+        if game_status != GameStatus::Finished {
+            return Ok(GameResult::NoResult);
         }
 
         if self.team_a_score > self.team_b_score {
-            return GameResult::TeamAWin;
+            return Ok(GameResult::TeamAWin);
         } else if self.team_b_score > self.team_a_score {
-            return GameResult::TeamBWin;
+            return Ok(GameResult::TeamBWin);
         } else {
-            return GameResult::Draw;
+            return Ok(GameResult::Draw);
         }
     }
 }
@@ -87,50 +105,50 @@ pub struct Oracle {
 }
 
 impl Oracle {
-    pub fn validate_bets(&self) -> Result<()> {
+    pub fn validate_new_bets(&self) -> Result<()> {
+        let game_status = self.game.game_status()?;
         let current_timestamp = Clock::get()?.unix_timestamp;
 
-        if current_timestamp >= self.start_at_utc_unix || self.game.status() == GameStatus::Finished
-        {
+        if current_timestamp >= self.start_at_utc_unix || game_status == GameStatus::Finished {
             return err!(Errors::GameHasAlreadyStarted);
         }
 
         Ok(())
     }
 
-    pub fn withdraw(
-        &self,
-        _user: &Pubkey,
-        player_bet: &PlayerBet,
-        bet_items: &Vec<BetItem>,
-    ) -> Result<()> {
-        let mut count_winners: u8 = 0;
-        let bet_item = match bet_items.get(player_bet.index as usize) {
-            Some(bet) => Ok(bet),
-            None => err!(Errors::UnautorizedWithdraw),
-        }?;
+    // pub fn withdraw(
+    //     &self,
+    //     _user: &Pubkey,
+    //     player_bet: &PlayerBet,
+    //     bet_items: &Vec<BetItem>,
+    // ) -> Result<()> {
+    //     let mut count_winners: u8 = 0;
+    //     let bet_item = match bet_items.get(player_bet.index as usize) {
+    //         Some(bet) => Ok(bet),
+    //         None => err!(Errors::UnautorizedWithdraw),
+    //     }?;
 
-        if bet_item.game_result() != self.game.game_result()
-            || self.game.game_result() == GameResult::NoResult
-        {
-            return err!(Errors::UnautorizedWithdraw);
-        }
+    //     if bet_item.game_result() != self.game.game_result()?
+    //         || self.game.game_result() == GameResult::NoResult
+    //     {
+    //         return err!(Errors::UnautorizedWithdraw);
+    //     }
 
-        for bet in bet_items {
-            if bet.game_result() == bet_item.game_result() {
-                count_winners = count_winners + 1;
-            }
-        }
+    //     for bet in bet_items {
+    //         if bet.game_result() == bet_item.game_result() {
+    //             count_winners = count_winners + 1;
+    //         }
+    //     }
 
-        let count_no_winners = (bet_items.len() as u8 - count_winners) as u64;
-        let vault_total_amount = (self.init_amount * count_no_winners)
-            .checked_div(count_winners as u64)
-            .ok_or(Errors::UnautorizedWithdraw)?;
+    //     let count_no_winners = (bet_items.len() as u8 - count_winners) as u64;
+    //     let vault_total_amount = (self.init_amount * count_no_winners)
+    //         .checked_div(count_winners as u64)
+    //         .ok_or(Errors::UnautorizedWithdraw)?;
 
-        let award = self.init_amount + vault_total_amount;
+    //     let award = self.init_amount + vault_total_amount;
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 }
 
 #[account]
@@ -203,7 +221,7 @@ pub struct CreateOracleAccounts<'info> {
         seeds = [oracle.key().as_ref(), b"vault".as_ref()],
         bump
       )]
-    pub vault: Account<'info, TokenAccount>,
+    pub vault: Box<Account<'info, TokenAccount>>,
 }
 
 #[derive(Accounts)]
@@ -257,14 +275,36 @@ pub struct JoinOracleAccounts<'info> {
         seeds = [oracle.key().as_ref(), b"vault".as_ref()],
         bump
       )]
-    pub vault: Account<'info, TokenAccount>,
+    pub vault: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
-    pub user_token_account: Account<'info, TokenAccount>,
+    pub user_token_account: Box<Account<'info, TokenAccount>>,
 }
 
 #[derive(Accounts)]
-#[instruction(instruction: JoinOracleInstruction)]
+pub struct UpdateOracleAccounts<'info> {
+    #[account(mut)]
+    pub oracle: Account<'info, Oracle>,
+    #[account(
+        constraint = organization.key() == oracle.organization.key(),
+        constraint = oracle.authority.key() == user.key()
+    )]
+    pub organization: Account<'info, Organization>,
+    #[account(mut)]
+    pub user: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
 pub struct WithdrawFromOracleAccounts<'info> {
+    #[account(
+        mut,
+        seeds = [
+            "oracle".as_bytes().as_ref(), 
+            organization.key().as_ref(),
+            format!("{}", oracle.id).as_bytes().as_ref()
+        ],
+        bump
+      )]
     pub oracle: Account<'info, Oracle>,
     #[account(
         constraint = player_bet.oracle.key() == oracle.key(),

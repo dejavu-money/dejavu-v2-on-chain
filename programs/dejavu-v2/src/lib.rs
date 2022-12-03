@@ -49,6 +49,13 @@ pub mod dejavu_v2 {
         create_oracle_handler(ctx, instruction)
     }
 
+    pub fn update_oracle(
+        ctx: Context<UpdateOracleAccounts>,
+        instruction: UpdateOracleInstruction,
+    ) -> Result<()> {
+        update_oracle_handler(ctx, instruction)
+    }
+
     pub fn join_oracle(
         ctx: Context<JoinOracleAccounts>,
         instruction: JoinOracleInstruction,
@@ -56,15 +63,8 @@ pub mod dejavu_v2 {
         join_oracle_handler(ctx, instruction)
     }
 
-    pub fn withdraw_from_oracle(
-        ctx: Context<WithdrawFromOracleAccounts>,
-        instruction: WithdrawFromOracleInstruction
-    ) -> Result<()> {
-
-        withdraw_from_oracle_handler(ctx, instruction)
+    pub fn withdraw_from_oracle(ctx: Context<WithdrawFromOracleAccounts>) -> Result<()> {
+        withdraw_from_oracle_handler(ctx)
     }
     /* Oracles Instructions */
 }
-
-#[derive(Accounts)]
-pub struct Initialize {}
